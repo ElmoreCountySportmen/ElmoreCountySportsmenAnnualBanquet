@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Banquet Registration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #B8860B;
+      --gold-light: #F5E6B8;
+      --gold-dark: #7A5C00;
+      --navy: #0D1B2A;
+      --navy-mid: #1C2E42;
+      --navy-soft: #2A3F55;
+      --cream: #FAF7F0;
+      --cream-dark: #F0EBE0;
+      --text-primary: #0D1B2A;
+      --text-secondary: #4A5568;
+      --text-muted: #8A96A3;
+      --border: rgba(13,27,42,0.12);
+      --border-strong: rgba(13,27,42,0.22);
+      --radius: 10px;
+      --radius-lg: 14px;
+      --shadow: 0 2px 12px rgba(13,27,42,0.08);
+      --shadow-lg: 0 6px 32px rgba(13,27,42,0.12);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* HEADER */
+    .site-header {
+      background: var(--navy);
+      padding: 2.5rem 1.5rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .site-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 40px,
+        rgba(184,134,11,0.04) 40px,
+        rgba(184,134,11,0.04) 80px
+      );
+    }
+    .site-header .ornament {
+      font-size: 13px;
+      letter-spacing: 0.25em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      position: relative;
+    }
+    .site-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 5vw, 40px);
+      font-weight: 600;
+      color: #fff;
+      position: relative;
+      line-height: 1.2;
+    }
+    .site-header .tagline {
+      font-size: 14px;
+      color: rgba(255,255,255,0.55);
+      margin-top: 8px;
+      position: relative;
+      font-weight: 300;
+    }
+    .gold-rule {
+      width: 60px;
+      height: 2px;
+      background: var(--gold);
+      margin: 16px auto 0;
+      position: relative;
+    }
+
+    /* LAYOUT */
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+
+    /* CARDS */
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-dark);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* FORM FIELDS */
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    @media(max-width:520px){ .row2,.row3{ grid-template-columns:1fr; } }
+
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
+    }
+    .field input, .field select, .field textarea {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text-primary);
+      background: var(--cream);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      width: 100%;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(184,134,11,0.12);
+      background: #fff;
+    }
+    .field textarea { resize: vertical; min-height: 64px; }
+
+    /* GUEST STEPPER */
+    .stepper-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .stepper-row > span { font-size: 14px; color: var(--text-primary); }
+    .stepper {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .stepper button {
+      width: 36px;
+      height: 36px;
+      background: var(--cream-dark);
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--text-primary);
+      transition: background .15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .stepper button:hover { background: var(--gold-light); }
+    .stepper .val {
+      width: 44px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--navy);
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      height: 36px;
+      line-height: 36px;
+    }
+
+    /* TABS */
+    .tab-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+    .tab {
+      padding: 7px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
+      background: transparent;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all .15s;
+    }
+    .tab:hover { border-color: var(--gold); color: var(--gold-dark); }
+    .tab.active {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* MEAL PILLS */
+    .meal-grid {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    .meal-pill {
+      padding: 7px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-secondary);
+      transition: all .15s;
+    }
+    .meal-pill:hover { border-color: var(--gold); color: var(--gold-dark); }
+    .meal-pill.sel {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy);
+    }
+    .meal-pill.kids-pill { display: none; }
+
+    /* TOGGLE */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-row:last-of-type { border-bottom: none; }
+    .toggle-label { font-size: 14px; color: var(--text-primary); }
+    .toggle-label small { font-size: 12px; color: var(--text-muted); display: block; margin-top: 1px; }
+    .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .tslider {
+      position: absolute;
+      inset: 0;
+      background: #CBD5E0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .toggle input:checked + .tslider { background: var(--gold); }
+    .tslider::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .2s;
+    }
+    .toggle input:checked + .tslider::before { transform: translateX(20px); }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--gold-light);
+      color: var(--gold-dark);
+      font-weight: 500;
+      margin-left: 8px;
+    }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+    /* ERROR */
+    .err {
+      font-size: 12px;
+      color: #C53030;
+      margin-top: 4px;
+      display: none;
+    }
+
+    /* BUTTONS */
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 500;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: background .15s, transform .1s;
+    }
+    .btn-primary:hover { background: var(--navy-mid); }
+    .btn-primary:active { transform: scale(0.99); }
+
+    .btn-ghost {
+      padding: 10px 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-ghost:hover { border-color: var(--gold); color: var(--gold-dark); }
+
+    .btn-excel {
+      padding: 11px 22px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      background: #1D6F42;
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background .15s;
+    }
+    .btn-excel:hover { background: #155233; }
+    .btn-excel svg { width: 16px; height: 16px; fill: #fff; }
+
+    /* REGISTRATIONS TABLE */
+    .reg-section { margin-top: 2.5rem; }
+    .reg-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 1rem;
+    }
+    .reg-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--navy);
+    }
+    .reg-count {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .tbl-wrap {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: auto;
+      box-shadow: var(--shadow);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 640px;
+    }
+    thead { background: var(--navy); }
+    th {
+      padding: 11px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+      white-space: nowrap;
+    }
+    td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--cream); }
+
+    .meal-tag {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin: 1px 2px 1px 0;
+      font-weight: 500;
+    }
+    .tag-beef { background: #FEE2D5; color: #7B2D00; }
+    .tag-pork { background: #FEEBC8; color: #744210; }
+    .tag-chicken { background: #C6F6D5; color: #1C4532; }
+    .tag-veg { background: #B2F5EA; color: #1D4044; }
+    .tag-kids { background: #BEE3F8; color: #1A365D; }
+
+    .del-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #C53030;
+      font-size: 18px;
+      padding: 0;
+      line-height: 1;
+      opacity: 0.6;
+      transition: opacity .15s;
+    }
+    .del-btn:hover { opacity: 1; }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+    }
+    .empty-state p { font-size: 14px; margin-top: 8px; }
+
+    .toast {
+      font-size: 13px;
+      color: #1D6F42;
+      font-weight: 500;
+      display: none;
+    }
+
+    .bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 1rem;
+    }
+
+    /* RAFFLE QTY */
+    .raffle-qty-wrap {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: var(--cream);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    .raffle-qty-wrap .field { max-width: 160px; }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <p class="ornament">&#10022; Official Registration &#10022;</p>
+    <h1>Annual Banquet</h1>
+    <p class="tagline">Please complete all required fields for yourself and any guests.</p>
+    <div class="gold-rule"></div>
+  </header>
+
+  <div class="container">
+
+    <!-- MEMBER INFO -->
+    <div class="card">
+      <p class="section-label">Member information</p>
+      <div class="row2">
+        <div class="field"><label>First name *</label><input type="text" id="m-first" placeholder="Jane"></div>
+        <div class="field"><label>Last name *</label><input type="text" id="m-last" placeholder="Smith"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Email address</label><input type="email" id="m-email" placeholder="jane@email.com"></div>
+        <div class="field"><label>Phone number</label><input type="tel" id="m-phone" placeholder="(555) 000-0000"></div>
+      </div>
+      <div class="field" style="max-width:220px;margin-top:4px;">
+        <label>Member ID (optional)</label>
+        <input type="text" id="m-id" placeholder="e.g. MB-1042">
+      </div>
+      <span class="err" id="err-member">Please enter your first and last name.</span>
+    </div>
+
+    <!-- GUEST COUNT -->
+    <div class="card">
+      <p class="section-label">Guests attending</p>
+      <div class="stepper-row">
+        <span>Number of additional guests (excluding yourself):</span>
+        <div class="stepper">
+          <button onclick="changeGuests(-1)">&#8722;</button>
+          <span class="val" id="guest-display">0</span>
+          <button onclick="changeGuests(1)">&#43;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="card">
+      <div class="tab-bar" id="tab-bar"></div>
+      <div id="tab-panels"></div>
+    </div>
+
+    <!-- SUBMIT ROW -->
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button class="btn-primary" style="max-width:340px;" onclick="submitEntry()">Add Registration to List</button>
+      <button class="btn-ghost" onclick="resetForm()">Clear form</button>
+    </div>
+
+    <!-- REGISTRATIONS -->
+    <div class="reg-section">
+      <div class="reg-header">
+        <div>
+          <p class="reg-title">Registrations</p>
+          <p class="reg-count" id="reg-count">0 registrations &mdash; 0 attendees total</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="toast" id="export-toast">&#10003; File downloaded!</span>
+          <button class="btn-excel" onclick="exportExcel()">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM8.5 18l2-3.5 2 3.5H14l-2.8-4.5L14 9h-1.5L10.5 12 8.5 9H7l2.8 4.5L7 18h1.5z"/></svg>
+            Download Excel (.xlsx)
+          </button>
+        </div>
+      </div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Contact</th>
+              <th>Attendee</th>
+              <th>Type</th>
+              <th>Meal</th>
+              <th>Bidder #</th>
+              <th>Raffle tickets</th>
+              <th>Registered</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="reg-tbody">
+            <tr>
+              <td colspan="9" class="empty-state">
+                <p>No registrations yet &mdash; fill in the form above and click <strong>Add Registration to List</strong>.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+
+  <script>
+    const MEALS = ['Beef','Pork','Chicken','Vegetarian'];
+    const MEAL_TAG = { Beef:'tag-beef', Pork:'tag-pork', Chicken:'tag-chicken', Vegetarian:'tag-veg', 'Kids Meal':'tag-kids' };
+
+    let guestCount = 0;
+    let registrations = [];
+    let nextBidder = 1001;
+
+    /* ── GUEST STEPPER ── */
+    function changeGuests(d) {
+      guestCount = Math.max(0, Math.min(10, guestCount + d));
+      document.getElementById('guest-display').textContent = guestCount;
+      rebuildTabs();
+    }
+
+    /* ── TAB SYSTEM ── */
+    function tabId(i)   { return 'tab-'   + (i === 0 ? 'me' : 'g' + i); }
+    function panelId(i) { return 'panel-' + (i === 0 ? 'me' : 'g' + i); }
+    function pfx(i)     { return i === 0 ? 'm' : 'g' + i; }
+
+    function rebuildTabs() {
+      const bar    = document.getElementById('tab-bar');
+      const panels = document.getElementById('tab-panels');
+      const total  = 1 + guestCount;
+      bar.innerHTML = '';
+      panels.innerHTML = '';
+      for (let i = 0; i < total; i++) {
+        const lbl = i === 0 ? 'Myself' : 'Guest ' + i;
+        const tab = document.createElement('button');
+        tab.className = 'tab' + (i === 0 ? ' active' : '');
+        tab.id = tabId(i);
+        tab.textContent = lbl;
+        tab.onclick = () => switchTab(i);
+        bar.appendChild(tab);
+
+        const panel = document.createElement('div');
+        panel.className = 'tab-panel' + (i === 0 ? ' active' : '');
+        panel.id = panelId(i);
+        panel.innerHTML = buildPanel(i);
+        panels.appendChild(panel);
+
+        // Wire raffle toggle
+        const rfCb = document.getElementById(pfx(i) + '-raffle');
+        if (rfCb) {
+          rfCb.onchange = function () {
+            document.getElementById(pfx(i) + '-raffle-qty-wrap').style.display = this.checked ? 'block' : 'none';
+          };
+        }
+        // Wire kid toggle
+        if (i > 0) {
+          const kidCb = document.getElementById(pfx(i) + '-iskid');
+          if (kidCb) kidCb.onchange = () => onKidToggle(pfx(i));
+        }
+      }
+    }
+
+    function buildPanel(i) {
+      const p = pfx(i);
+      const isMe = i === 0;
+      const guestFields = isMe ? '' : `
+        <div class="row2" style="margin-bottom:12px;">
+          <div class="field"><label>First name</label><input type="text" id="${p}-gfirst" placeholder="Guest first name"></div>
+          <div class="field"><label>Last name</label><input type="text" id="${p}-glast" placeholder="Guest last name"></div>
+        </div>`;
+
+      const kidRow = isMe ? '' : `
+        <div class="toggle-row" style="border-top:1px solid var(--border);margin-top:4px;">
+          <div class="toggle-label">
+            Is this a child?
+            <small>Enables kids meal option</small>
+          </div>
+          <label class="toggle"><input type="checkbox" id="${p}-iskid"><span class="tslider"></span></label>
+        </div>`;
+
+      return `
+        ${guestFields}
+        <p class="section-label" style="margin-top:${isMe ? '0' : '4px'};">Meal selection *</p>
+        <div class="meal-grid" id="${p}-meal-grid">
+          ${MEALS.map(m => `<button class="meal-pill" onclick="selectMeal('${p}','${m}',this)">${m}</button>`).join('')}
+          <button class="meal-pill kids-pill" id="${p}-kids-btn" onclick="selectMeal('${p}','Kids Meal',this)">Kids Meal</button>
+        </div>
+        <input type="hidden" id="${p}-meal-val" value="">
+        <span class="err" id="${p}-meal-err">Please select a meal option.</span>
+        ${kidRow}
+        <hr class="divider">
+        <p class="section-label">Bidder number &amp; raffle</p>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            Request a bidder number
+            <small>Auto-assigned upon submission <span class="badge">Auto</span></small>
+          </div>
+          <label class="toggle"><input type="checkbox" id="${p}-bidder"><span class="tslider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            Early bird raffle tickets
+            <small>Purchased at check-in</small>
+          </div>
+          <label class="toggle"><input type="checkbox" id="${p}-raffle"><span class="tslider"></span></label>
+        </div>
+        <div class="raffle-qty-wrap" id="${p}-raffle-qty-wrap">
+          <div class="field">
+            <label>How many raffle tickets?</label>
+            <input type="number" id="${p}-raffle-qty" min="1" max="20" value="1">
+          </div>
+        </div>`;
+    }
+
+    function onKidToggle(p) {
+      const isKid = document.getElementById(p + '-iskid').checked;
+      const btn   = document.getElementById(p + '-kids-btn');
+      if (btn) btn.style.display = isKid ? '' : 'none';
+      if (!isKid && document.getElementById(p + '-meal-val').value === 'Kids Meal') {
+        document.getElementById(p + '-meal-val').value = '';
+        document.querySelectorAll('#' + p + '-meal-grid .meal-pill').forEach(b => b.classList.remove('sel'));
+      }
+    }
+
+    function selectMeal(p, meal, btn) {
+      document.querySelectorAll('#' + p + '-meal-grid .meal-pill').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      document.getElementById(p + '-meal-val').value = meal;
+      document.getElementById(p + '-meal-err').style.display = 'none';
+    }
+
+    function switchTab(i) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(tabId(i)).classList.add('active');
+      document.getElementById(panelId(i)).classList.add('active');
+    }
+
+    /* ── HELPERS ── */
+    function gv(id)  { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+    function gc(id)  { const el = document.getElementById(id); return el ? el.checked : false; }
+    function esc(s)  { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function mealTag(meal) {
+      const cls = MEAL_TAG[meal] || 'tag-kids';
+      return `<span class="meal-tag ${cls}">${esc(meal)}</span>`;
+    }
+
+    /* ── SUBMIT ── */
+    function submitEntry() {
+      const first = gv('m-first'), last = gv('m-last');
+      const memErr = document.getElementById('err-member');
+      if (!first || !last) { memErr.style.display = 'block'; window.scrollTo({top:0,behavior:'smooth'}); return; }
+      memErr.style.display = 'none';
+
+      const total = 1 + guestCount;
+      const people = [];
+
+      for (let i = 0; i < total; i++) {
+        const p    = pfx(i);
+        const meal = gv(p + '-meal-val');
+        const mErr = document.getElementById(p + '-meal-err');
+        if (!meal) { mErr.style.display = 'block'; switchTab(i); return; }
+        if (mErr) mErr.style.display = 'none';
+
+        const isKid   = i > 0 ? gc(p + '-iskid') : false;
+        const bidder  = gc(p + '-bidder') ? nextBidder++ : null;
+        const raffle  = gc(p + '-raffle');
+        const rQty    = raffle ? (parseInt(gv(p + '-raffle-qty')) || 1) : 0;
+        const name    = i === 0
+          ? first + ' ' + last
+          : ((gv(p + '-gfirst') || 'Guest') + ' ' + (gv(p + '-glast') || i)).trim();
+
+        people.push({ name, isKid, meal, bidder, raffle, rQty });
+      }
+
+      registrations.push({
+        member:   first + ' ' + last,
+        memberId: gv('m-id'),
+        email:    gv('m-email'),
+        phone:    gv('m-phone'),
+        people,
+        ts:       new Date().toLocaleString()
+      });
+
+      renderTable();
+      resetForm();
+    }
+
+    function resetForm() {
+      ['m-first','m-last','m-email','m-phone','m-id'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      guestCount = 0;
+      document.getElementById('guest-display').textContent = '0';
+      rebuildTabs();
+    }
+
+    /* ── TABLE ── */
+    function renderTable() {
+      const tbody = document.getElementById('reg-tbody');
+      const totalAttendees = registrations.reduce((s, r) => s + r.people.length, 0);
+      document.getElementById('reg-count').textContent =
+        registrations.length + ' registration' + (registrations.length !== 1 ? 's' : '') +
+        ' \u2014 ' + totalAttendees + ' attendee' + (totalAttendees !== 1 ? 's' : '') + ' total';
+
+      if (!registrations.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><p>No registrations yet &mdash; fill in the form above and click <strong>Add Registration to List</strong>.</p></td></tr>';
+        return;
+      }
+
+      let html = '';
+      registrations.forEach((r, ri) => {
+        r.people.forEach((p, pi) => {
+          const isFirst = pi === 0;
+          html += `<tr>
+            ${isFirst ? `<td rowspan="${r.people.length}" style="border-right:1px solid var(--border);">
+              <strong style="font-weight:500;">${esc(r.member)}</strong>
+              ${r.memberId ? `<br><small style="color:var(--text-muted);font-size:11px;">${esc(r.memberId)}</small>` : ''}
+            </td>
+            <td rowspan="${r.people.length}" style="border-right:1px solid var(--border);font-size:12px;">
+              ${esc(r.email) || '&mdash;'}<br>${esc(r.phone) || ''}
+            </td>` : ''}
+            <td>${esc(p.name)}</td>
+            <td>${p.isKid ? '<span class="meal-tag tag-kids">Child</span>' : '<span style="font-size:12px;color:var(--text-muted);">Adult</span>'}</td>
+            <td>${mealTag(p.meal)}</td>
+            <td>${p.bidder ? '<strong style="font-weight:500;">#' + p.bidder + '</strong>' : '<span style="color:var(--text-muted);">&mdash;</span>'}</td>
+            <td>${p.raffle ? p.rQty : '<span style="color:var(--text-muted);">&mdash;</span>'}</td>
+            ${isFirst ? `<td rowspan="${r.people.length}" style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${esc(r.ts)}</td>
+            <td rowspan="${r.people.length}"><button class="del-btn" onclick="deleteReg(${ri})" title="Remove">&times;</button></td>` : ''}
+          </tr>`;
+        });
+      });
+      tbody.innerHTML = html;
+    }
+
+    function deleteReg(i) {
+      if (confirm('Remove this registration?')) {
+        registrations.splice(i, 1);
+        renderTable();
+      }
+    }
+
+    /* ── EXCEL EXPORT ── */
+    function exportExcel() {
+      if (!registrations.length) { alert('No registrations to export yet!'); return; }
+
+      const headers = [
+        'Member Name', 'Member ID', 'Email', 'Phone',
+        'Attendee Name', 'Attendee Type', 'Meal Selection',
+        'Bidder Number', 'Early Bird Raffle Tickets', 'Registered At'
+      ];
+
+      const rows = [];
+      registrations.forEach(r => {
+        r.people.forEach(p => {
+          rows.push([
+            r.member,
+            r.memberId,
+            r.email,
+            r.phone,
+            p.name,
+            p.isKid ? 'Child' : 'Adult',
+            p.meal,
+            p.bidder || '',
+            p.raffle ? p.rQty : 0,
+            r.ts
+          ]);
+        });
+      });
+
+      const wsData = [headers, ...rows];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      // Column widths
+      ws['!cols'] = [22,14,26,16,22,10,14,12,18,20].map(w => ({ wch: w }));
+
+      // Style header row bold (basic)
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const addr = XLSX.utils.encode_cell({ r: 0, c: C });
+        if (!ws[addr]) continue;
+        ws[addr].s = { font: { bold: true } };
+      }
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Registrations');
+
+      // Summary sheet
+      const mealCounts = {};
+      let totalBidders = 0, totalRaffle = 0, totalAdults = 0, totalKids = 0;
+      registrations.forEach(r => {
+        r.people.forEach(p => {
+          mealCounts[p.meal] = (mealCounts[p.meal] || 0) + 1;
+          if (p.bidder) totalBidders++;
+          if (p.raffle) totalRaffle += p.rQty;
+          if (p.isKid) totalKids++; else totalAdults++;
+        });
+      });
+      const totalAttendees = totalAdults + totalKids;
+      const summaryData = [
+        ['BANQUET REGISTRATION SUMMARY', ''],
+        ['Generated', new Date().toLocaleString()],
+        ['', ''],
+        ['Total Registrations', registrations.length],
+        ['Total Attendees', totalAttendees],
+        ['Adults', totalAdults],
+        ['Children', totalKids],
+        ['', ''],
+        ['MEAL BREAKDOWN', ''],
+        ...Object.entries(mealCounts).map(([m, n]) => [m, n]),
+        ['', ''],
+        ['EXTRAS', ''],
+        ['Bidder Numbers Assigned', totalBidders],
+        ['Total Raffle Tickets', totalRaffle],
+      ];
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      wsSummary['!cols'] = [{ wch: 30 }, { wch: 20 }];
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+      XLSX.writeFile(wb, 'banquet_registrations.xlsx');
+
+      const toast = document.getElementById('export-toast');
+      toast.style.display = 'inline';
+      setTimeout(() => toast.style.display = 'none', 3000);
+    }
+
+    // Init
+    rebuildTabs();
+  </script>
+</body>
+</html>
